@@ -1,4 +1,4 @@
-package com.enoliking.metnet_sniffer;
+package com.enoliking.metnetsniffer;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
