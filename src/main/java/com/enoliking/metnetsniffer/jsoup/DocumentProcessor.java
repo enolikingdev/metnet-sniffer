@@ -7,9 +7,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,6 +16,9 @@ import java.util.stream.Collectors;
 public class DocumentProcessor {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    public static final String CELSIUS_SEPARATOR = " ";
+    public static final String PERCENTAGE_SEPARATOR = "%";
+    public static final String TIMEZONE = "Europe/Paris";
 
     public String getLocation(Document doc) {
         Element element = doc.selectFirst(".m3");
@@ -36,26 +37,40 @@ public class DocumentProcessor {
 
     private Temperature mapToTemperature(Elements elements, String location) {
         String dateAsString = elements.get(0).text();
-        String withCelsius = elements.get(1).text();
+        String temperatureWithCelsius = elements.get(1).text();
+        String dewWithCelsius = elements.get(2).text();
+        String humidityWithPercentage = elements.get(3).text();
         return Temperature.builder()
                 .time(toInstant(dateAsString))
-                .value(stringToDouble(withCelsius))
+                .temperature(stringToDouble(temperatureWithCelsius))
+                .dew(stringToDouble(dewWithCelsius))
+                .humidity(withoutPercentage(humidityWithPercentage))
                 .location(location)
                 .build();
     }
 
     private Instant toInstant(String dateAsString) {
-        return LocalDateTime.parse(dateAsString, FORMATTER).toInstant(ZoneOffset.UTC);
+        LocalDateTime dateTime = LocalDateTime.parse(dateAsString, FORMATTER);
+        return ZonedDateTime.of(dateTime, ZoneId.of(TIMEZONE)).toInstant();
     }
 
     @NotNull
-    private static Double stringToDouble(String withCelsius) {
+    private Double stringToDouble(String withCelsius) {
         return Double.valueOf(withoutCelsius(withCelsius));
     }
 
     @NotNull
-    private static String withoutCelsius(String withCelsius) {
-        return withCelsius.substring(0, withCelsius.indexOf(" "));
+    private String withoutCelsius(String withCelsius) {
+        return cutBefore(withCelsius, CELSIUS_SEPARATOR);
+    }
+
+    @NotNull
+    private int withoutPercentage(String withPercentage) {
+        return Integer.valueOf(cutBefore(withPercentage, PERCENTAGE_SEPARATOR));
+    }
+
+    private String cutBefore(String input, String cutHere) {
+        return input.substring(0, input.indexOf(cutHere));
     }
 
 }

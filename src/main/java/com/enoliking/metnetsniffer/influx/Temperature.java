@@ -16,7 +16,13 @@ public class Temperature {
     String location;
 
     @Column
-    Double value;
+    Double temperature;
+
+    @Column
+    Double dew;
+
+    @Column
+    Integer humidity;
 
     @Column(timestamp = true)
     Instant time;

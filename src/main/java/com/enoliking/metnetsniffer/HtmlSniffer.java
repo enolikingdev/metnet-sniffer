@@ -17,7 +17,7 @@ import java.util.List;
 public class HtmlSniffer {
 
     public static final String URL = "http://www.metnet.hu/online-allomasok";
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    public static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private final SSLHelper sslHelper;
     private final DocumentProcessor processor;
