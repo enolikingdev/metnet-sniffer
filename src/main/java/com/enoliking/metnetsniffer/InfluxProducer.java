@@ -27,7 +27,7 @@ public class InfluxProducer {
     @Value("${influx.bucket}")
     private String bucket;
 
-    @PostConstruct
+//    @PostConstruct
     public void doit() {
         InfluxDBClient influxDBClient = InfluxDBClientFactory.create("http://" + host + ":8086", token.toCharArray(), org, bucket);
 
