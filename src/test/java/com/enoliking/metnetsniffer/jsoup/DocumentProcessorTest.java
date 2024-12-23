@@ -56,6 +56,7 @@ public class DocumentProcessorTest {
             assertNotNull(row.getDew());
             assertNotNull(row.getHumidity());
             assertNotNull(row.getTime());
+            assertNotNull(row.getTemperature());
             assertTrue(validTime(row.getTime()));
         }
     }

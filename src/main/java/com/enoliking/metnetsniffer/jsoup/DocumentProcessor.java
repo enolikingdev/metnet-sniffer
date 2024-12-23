@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public class DocumentProcessor {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    public static final String CELSIUS_SEPARATOR = " ";
+    public static final String SPACE = " ";
     public static final String PERCENTAGE_SEPARATOR = "%";
     public static final String TIMEZONE = "Europe/Paris";
 
@@ -40,11 +40,13 @@ public class DocumentProcessor {
         String temperatureWithCelsius = elements.get(1).text();
         String dewWithCelsius = elements.get(2).text();
         String humidityWithPercentage = elements.get(3).text();
+        String rainFallWithMillimeter = elements.get(7).text();
         return Temperature.builder()
                 .time(toInstant(dateAsString))
                 .temperature(stringToDouble(temperatureWithCelsius))
                 .dew(stringToDouble(dewWithCelsius))
                 .humidity(withoutPercentage(humidityWithPercentage))
+                .rainfall(withoutMillimeter(rainFallWithMillimeter))
                 .location(location)
                 .build();
     }
@@ -61,12 +63,16 @@ public class DocumentProcessor {
 
     @NotNull
     private String withoutCelsius(String withCelsius) {
-        return cutBefore(withCelsius, CELSIUS_SEPARATOR);
+        return cutBefore(withCelsius, SPACE);
     }
 
     @NotNull
     private int withoutPercentage(String withPercentage) {
         return Integer.valueOf(cutBefore(withPercentage, PERCENTAGE_SEPARATOR));
+    }
+
+    private Double withoutMillimeter(String withMillimeter) {
+        return Double.valueOf(cutBefore(withMillimeter, SPACE));
     }
 
     private String cutBefore(String input, String cutHere) {

@@ -24,6 +24,9 @@ public class Temperature {
     @Column
     Integer humidity;
 
+    @Column
+    Double rainfall;
+
     @Column(timestamp = true)
     Instant time;
 }
