@@ -1,21 +1,30 @@
 package com.enoliking.metnetsniffer;
 
+import com.enoliking.metnetsniffer.influx.PointConverter;
+import com.enoliking.metnetsniffer.influx.Temperature;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.InfluxDBClientFactory;
 import com.influxdb.client.QueryApi;
 import com.influxdb.client.WriteApiBlocking;
-import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import com.influxdb.query.FluxRecord;
 import com.influxdb.query.FluxTable;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Collection;
 import java.util.List;
 
+import static com.enoliking.metnetsniffer.jsoup.DocumentProcessor.TIMEZONE;
+
 @Component
+@RequiredArgsConstructor
 public class InfluxProducer {
 
     @Value("${influx.host}")
@@ -27,56 +36,53 @@ public class InfluxProducer {
     @Value("${influx.bucket}")
     private String bucket;
 
-//    @PostConstruct
-    public void doit() {
+    private final HtmlSniffer htmlSniffer;
+    private final PointConverter pointConverter;
+
+    @PostConstruct
+    public void doit() throws IOException {
+        LocalDate day = LocalDate.now();
+        List<Temperature> temperatureList = htmlSniffer.sniff(day);
+
         InfluxDBClient influxDBClient = InfluxDBClientFactory.create("http://" + host + ":8086", token.toCharArray(), org, bucket);
+        List<Instant> whatWeHave = readData(influxDBClient, day);
 
-        //
-        // Write data
-        //
-        WriteApiBlocking writeApi = influxDBClient.getWriteApiBlocking();
+        List<Temperature> filteredTemperatureList = getMissing(temperatureList, whatWeHave);
+        List<Point> points = filteredTemperatureList.stream()
+                .map(pointConverter::convert)
+                .flatMap(Collection::stream)
+                .toList();
 
-        //
-        // Write by Data Point
-        //
-        Point point = Point.measurement("temperature")
-                .addTag("location", "west")
-                .addField("value", 55D)
-                .time(Instant.now().toEpochMilli(), WritePrecision.MS);
+        writeData(influxDBClient, points);
+        influxDBClient.close();
+    }
 
-        writeApi.writePoint(point);
+    private List<Temperature> getMissing(List<Temperature> temperatureList, List<Instant> whatWeHave) {
+        return temperatureList.stream()
+                .filter(temperature -> !whatWeHave.contains(temperature.getTime()))
+                .toList();
+    }
 
-        //
-        // Write by LineProtocol
-        //
-        writeApi.writeRecord(WritePrecision.NS, "temperature,location=north value=60.0");
-
-        //
-        // Write by POJO
-        //
-        Temperature temperature = new Temperature();
-        temperature.location = "south";
-        temperature.value = 62D;
-        temperature.time = Instant.now();
-
-        writeApi.writeMeasurement( WritePrecision.NS, temperature);
-
-        //
-        // Query data
-        //
-        String flux = "from(bucket:\"" + bucket + "\") |> range(start: 0)";
+    private List<Instant> readData(InfluxDBClient influxDBClient, LocalDate localDate) {
+        Instant startOfDay = localDate.atStartOfDay(ZoneId.of(TIMEZONE)).toInstant();
+        Instant endOfDay = localDate.plusDays(1).atStartOfDay(ZoneId.of(TIMEZONE)).toInstant();
+        String flux = "from(bucket:\"" + bucket + "\") |> range(start: " + startOfDay + ", stop: " + endOfDay + ")";
 
         QueryApi queryApi = influxDBClient.getQueryApi();
 
         List<FluxTable> tables = queryApi.query(flux);
-        for (FluxTable fluxTable : tables) {
-            List<FluxRecord> records = fluxTable.getRecords();
-            for (FluxRecord fluxRecord : records) {
-                System.out.println(fluxRecord.getTime() + ": " + fluxRecord.getValueByKey("_value"));
-            }
-        }
+        List<Instant> list = tables.stream()
+                .map(FluxTable::getRecords)
+                .flatMap(Collection::stream)
+                .map(FluxRecord::getTime)
+                .distinct()
+                .toList();
+        return list;
+    }
 
-        influxDBClient.close();
+    private void writeData(InfluxDBClient influxDBClient, List<Point> points) {
+        WriteApiBlocking writeApi = influxDBClient.getWriteApiBlocking();
+        writeApi.writePoints(points);
     }
 
 }

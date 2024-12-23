@@ -9,8 +9,13 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.function.Predicate;
+
+import static com.enoliking.metnetsniffer.jsoup.DocumentProcessor.TIMEZONE;
 
 @Component
 @RequiredArgsConstructor
@@ -29,7 +34,15 @@ public class HtmlSniffer {
 
     public List<Temperature> sniff(LocalDate date) throws IOException {
         Document doc = sslHelper.getConnection(buildUrl(date)).userAgent(userAgent).get();
-        return processor.getTemperature(doc);
+        List<Temperature> temperatureList = processor.getTemperature(doc);
+
+        ZoneId zoneId = ZoneId.of(TIMEZONE);
+        Predicate<Temperature> isAtGivenDay = temperature ->
+                LocalDate.ofInstant(temperature.getTime(), zoneId).equals(date);
+        List<Temperature> list = temperatureList.stream()
+                .filter(isAtGivenDay)
+                .toList();
+        return list;
     }
 
     private String buildUrl(LocalDate date) {
