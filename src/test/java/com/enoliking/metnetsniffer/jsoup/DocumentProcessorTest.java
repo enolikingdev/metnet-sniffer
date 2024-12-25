@@ -25,7 +25,10 @@ public class DocumentProcessorTest {
 
     public static final String DAY = "2024-11-30";
     public static final String LOCATION = "Ráckeresztúr";
-    public static final String TEST_RESOURCE = "/512-" + DAY + ".html";
+    public static final double POSITION_LAT = 47.2757;
+    public static final double POSITION_LON = 18.8307;
+    public static final int OSTID = 512;
+    public static final String TEST_RESOURCE = "/" + OSTID + "-" + DAY + ".html";
 
     private LocalDate day = LocalDate.parse(DAY, FORMATTER);
     private Instant start = day.atStartOfDay(ZoneId.of(TIMEZONE)).toInstant().minusSeconds(1);
@@ -47,11 +50,27 @@ public class DocumentProcessorTest {
     }
 
     @Test
+    public void getIdTest() {
+        int id = processor.getId(doc);
+        assertEquals(OSTID, id);
+    }
+
+    @Test
+    public void getPositionTest() {
+        DocumentProcessor.Position position = processor.getPosition(doc);
+        assertEquals(POSITION_LAT, position.lat());
+        assertEquals(POSITION_LON, position.lon());
+    }
+
+    @Test
     public void getTemperatureTest() {
         List<Temperature> rows = processor.getTemperature(doc);
         assertEquals(145, rows.size());
         for (Temperature row : rows) {
+            assertEquals(OSTID, row.getId());
             assertEquals(LOCATION, row.getLocation());
+            assertEquals(POSITION_LAT, row.getPositionLat());
+            assertEquals(POSITION_LON, row.getPositionLon());
             assertNotNull(row.getTemperature());
             assertNotNull(row.getDew());
             assertNotNull(row.getHumidity());

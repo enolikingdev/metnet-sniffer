@@ -12,11 +12,20 @@ import java.time.Instant;
 @Getter
 public class Temperature {
 
+    @Column
+    Integer id;
+
     @Column(tag = true)
     String location;
 
     @Column
     Double temperature;
+
+    @Column
+    Double positionLat;
+
+    @Column
+    Double positionLon;
 
     @Column
     Double dew;

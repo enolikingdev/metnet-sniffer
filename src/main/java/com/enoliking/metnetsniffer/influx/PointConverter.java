@@ -19,7 +19,10 @@ public class PointConverter {
 
     private Point toPoint(Temperature input, String measurement, String label, NumericValueConverter converter) {
         return Point.measurement(measurement)
+                .addTag("id", String.valueOf(input.getId()))
                 .addTag("location", input.getLocation())
+                .addTag("positionLat", String.valueOf(input.getPositionLat()))
+                .addTag("positionLon", String.valueOf(input.getPositionLon()))
                 .addTag("domain", "metnet")
                 .addTag("label", label)
                 .addField("value", converter.getValue(input))
