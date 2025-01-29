@@ -35,6 +35,8 @@ public class InfluxProducer {
     private String org;
     @Value("${influx.bucket}")
     private String bucket;
+    @Value("${metnet.ostid}")
+    private String ostid;
 
     private final HtmlSniffer htmlSniffer;
     private final PointConverter pointConverter;
@@ -52,7 +54,6 @@ public class InfluxProducer {
                 .map(pointConverter::convert)
                 .flatMap(Collection::stream)
                 .toList();
-        
         writeData(influxDBClient, points);
         influxDBClient.close();
     }
@@ -66,7 +67,8 @@ public class InfluxProducer {
     private List<Instant> readData(InfluxDBClient influxDBClient, LocalDate localDate) {
         Instant startOfDay = localDate.atStartOfDay(ZoneId.of(TIMEZONE)).toInstant();
         Instant endOfDay = localDate.plusDays(1).atStartOfDay(ZoneId.of(TIMEZONE)).toInstant();
-        String flux = "from(bucket:\"" + bucket + "\") |> range(start: " + startOfDay + ", stop: " + endOfDay + ")";
+        String flux = "from(bucket:\"" + bucket + "\") |> range(start: " + startOfDay + ", stop: " + endOfDay + ")" +
+                "|> filter(fn: (r) => r[\"id\"] == \"" + ostid +"\")";
 
         QueryApi queryApi = influxDBClient.getQueryApi();
 
