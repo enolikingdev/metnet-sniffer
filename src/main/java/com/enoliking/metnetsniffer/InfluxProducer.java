@@ -37,6 +37,8 @@ public class InfluxProducer {
     private String bucket;
     @Value("${metnet.ostid}")
     private String ostid;
+    @Value("${ttl:10}")
+    private int ttlSeconds;
 
     private final HtmlSniffer htmlSniffer;
     private final PointConverter pointConverter;
@@ -56,6 +58,11 @@ public class InfluxProducer {
                 .toList();
         writeData(influxDBClient, points);
         influxDBClient.close();
+        try {
+            Thread.sleep(ttlSeconds * 1000); // Simulate some work
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private List<Temperature> getMissing(List<Temperature> temperatureList, List<Instant> whatWeHave) {
