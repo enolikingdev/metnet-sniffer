@@ -12,6 +12,7 @@ import com.influxdb.query.FluxTable;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -23,20 +24,21 @@ import java.util.List;
 
 import static com.enoliking.metnetsniffer.jsoup.DocumentProcessor.TIMEZONE;
 
+@Profile("prod")
 @Component
 @RequiredArgsConstructor
 public class InfluxProducer {
 
-    @Value("${influx.host}")
+    @Value("${influx.host:localhost}")
     private String host;
-    @Value("${influx.token}")
+    @Value("${influx.token:sometoken}")
     private String token;
-    @Value("${influx.org}")
+    @Value("${influx.org:myorg}")
     private String org;
-    @Value("${influx.bucket}")
+    @Value("${influx.bucket:mybucket}")
     private String bucket;
     @Value("${metnet.ostid}")
-    private String ostid;
+    private int ostid;
     @Value("${ttl:10}")
     private int ttlSeconds;
 
